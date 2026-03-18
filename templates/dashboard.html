@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div class="container">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-sub">Welcome back, {{ current_user.name }}</p>
+      </div>
+      <a href="{{ url_for('projects') }}" class="btn-primary">+ New Project</a>
+    </div>
+
+    <!-- USAGE STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Scans Used</div>
+        <div class="stat-value">{{ current_user.scans_used }} / {{ current_user.plan_config().scans }}</div>
+        <div class="stat-bar">
+          <div class="stat-bar-fill" style="width: {{ [((current_user.scans_used / current_user.plan_config().scans) * 100)|int, 100]|min }}%"></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Projects</div>
+        <div class="stat-value">{{ current_user.projects|length }} / {{ current_user.plan_config().projects }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Current Plan</div>
+        <div class="stat-value plan-{{ current_user.plan }}">{{ current_user.plan.upper() }}</div>
+        {% if current_user.plan == 'free' %}
+          <a href="{{ url_for('pricing') }}" class="stat-upgrade">Upgrade to Pro →</a>
+        {% endif %}
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Scans Left</div>
+        <div class="stat-value">{{ current_user.scans_left() }}</div>
+      </div>
+    </div>
+
+    <!-- RECENT SCANS -->
+    <div class="section-block">
+      <div class="block-header">
+        <h2 class="block-title">Recent Scans</h2>
+        <a href="{{ url_for('projects') }}" class="link-muted">View all projects →</a>
+      </div>
+
+      {% if recent_scans %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Target</th>
+              <th>Project</th>
+              <th>Risk</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for scan in recent_scans %}
+            <tr>
+              <td class="mono">{{ scan.target }}</td>
+              <td>{{ scan.project.name }}</td>
+              <td>
+                <div class="risk-badge risk-{{ 'high' if scan.risk_score >= 60 else 'medium' if scan.risk_score >= 30 else 'low' }}">
+                  {{ scan.risk_score }}
+                </div>
+              </td>
+              <td><span class="status-badge status-{{ scan.status }}">{{ scan.status }}</span></td>
+              <td class="muted">{{ scan.created_at.strftime('%b %d, %Y') }}</td>
+              <td>
+                {% if scan.status == 'done' %}
+                  <a href="{{ url_for('scan_results', scan_id=scan.scan_id) }}" class="link-action">View →</a>
+                {% elif scan.status == 'running' %}
+                  <a href="{{ url_for('scan_running', scan_id=scan.scan_id) }}" class="link-action">Live →</a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">🔍</div>
+          <div class="empty-title">No scans yet</div>
+          <p class="empty-desc">Create a project and run your first scan to get started.</p>
+          <a href="{{ url_for('projects') }}" class="btn-primary">Create Project</a>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

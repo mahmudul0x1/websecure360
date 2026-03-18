@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',Arial,sans-serif; font-size:13px; color:#1a1a2e; background:#fff; padding:40px; }
+
+/* Header */
+.report-header { display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:18px; border-bottom:3px solid #4f8ef7; margin-bottom:24px; }
+.report-brand { font-size:22px; font-weight:700; color:#4f8ef7; }
+.report-brand span { color:#1a1a2e; }
+.report-meta { text-align:right; font-size:11px; color:#666; line-height:1.9; }
+
+/* Risk */
+.risk-block { display:inline-block; padding:12px 28px; border-radius:8px; margin-bottom:24px; }
+.risk-high   { background:#fff0f0; border:2px solid #ff4444; color:#cc0000; }
+.risk-medium { background:#fff8e6; border:2px solid #f5a623; color:#b37a00; }
+.risk-low    { background:#f0fff8; border:2px solid #3ecf8e; color:#1a8a5a; }
+.risk-num { font-size:36px; font-weight:700; line-height:1; }
+.risk-lbl { font-size:11px; text-transform:uppercase; letter-spacing:1px; margin-top:3px; }
+
+/* Section */
+.section { margin-bottom:20px; page-break-inside:avoid; }
+.section-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#4f8ef7; padding:7px 12px; background:#f0f5ff; border-left:4px solid #4f8ef7; margin-bottom:10px; }
+.section-title.danger { color:#cc0000; background:#fff0f0; border-color:#ff4444; }
+.section-title.warning { color:#b37a00; background:#fff8e6; border-color:#f5a623; }
+.section-title.clean { color:#1a8a5a; background:#f0fff8; border-color:#3ecf8e; }
+
+/* Table */
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th { background:#f5f7fa; padding:7px 10px; text-align:left; font-weight:600; color:#444; border-bottom:1px solid #ddd; font-size:11px; text-transform:uppercase; }
+td { padding:7px 10px; border-bottom:1px solid #eee; vertical-align:top; }
+tr:last-child td { border-bottom:none; }
+.mono { font-family:monospace; font-size:11px; word-break:break-all; }
+
+/* Badges */
+.ok      { background:#e8faf3; color:#1a8a5a; padding:2px 7px; border-radius:3px; font-size:10px; font-weight:700; }
+.warn    { background:#fff8e6; color:#b37a00; padding:2px 7px; border-radius:3px; font-size:10px; font-weight:700; }
+.danger  { background:#fff0f0; color:#cc0000; padding:2px 7px; border-radius:3px; font-size:10px; font-weight:700; }
+.info    { background:#edf2ff; color:#4f8ef7; padding:2px 7px; border-radius:3px; font-size:10px; font-weight:700; }
+
+.clean-msg { color:#1a8a5a; font-size:12px; padding:6px 0; }
+.alert-box { padding:8px 12px; border-radius:4px; margin-bottom:8px; font-size:12px; font-weight:600; }
+.alert-danger  { background:#fff0f0; border:1px solid #ffcccc; color:#cc0000; }
+.alert-warning { background:#fff8e6; border:1px solid #ffe0a0; color:#b37a00; }
+
+/* Footer */
+.report-footer { margin-top:40px; padding-top:14px; border-top:1px solid #eee; font-size:11px; color:#999; display:flex; justify-content:space-between; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="report-header">
+  <div>
+    <div class="report-brand">⬡ WebSecure<span>360</span></div>
+    <div style="font-size:11px;color:#888;margin-top:4px">Web Security Assessment Report</div>
+  </div>
+  <div class="report-meta">
+    <div><strong>Project:</strong> {{ project.name }}</div>
+    <div><strong>Target:</strong> {{ scan.target }}</div>
+    <div><strong>Modules:</strong> {{ scan.modules_list()|length }} run</div>
+    <div><strong>Date:</strong> {{ scan.completed_at.strftime('%B %d, %Y %H:%M') if scan.completed_at else 'N/A' }}</div>
+    <div><strong>Scan ID:</strong> {{ scan.scan_id[:8] }}...</div>
+  </div>
+</div>
+
+<!-- RISK SCORE -->
+{% set rc = 'risk-high' if scan.risk_score >= 60 else 'risk-medium' if scan.risk_score >= 30 else 'risk-low' %}
+{% set rl = 'HIGH' if scan.risk_score >= 60 else 'MEDIUM' if scan.risk_score >= 30 else 'LOW' %}
+<div class="risk-block {{ rc }}">
+  <div class="risk-num">{{ scan.risk_score }}/100</div>
+  <div class="risk-lbl">Risk Score — {{ rl }}</div>
+</div>
+
+<!-- MACRO: simple findings table -->
+{% macro findings_table(items, empty_msg) %}
+  {% if items %}
+  <table><thead><tr><th>Path</th><th>URL</th><th>Severity</th><th>Detail</th></tr></thead><tbody>
+  {% for item in items %}
+  <tr>
+    <td class="mono">{{ item.get('path', item.get('type','—')) }}</td>
+    <td class="mono">{{ item.get('url','—') }}</td>
+    <td>
+      {% set sev = item.get('severity','') %}
+      {% if sev == 'CRITICAL' %}<span class="danger">CRITICAL</span>
+      {% elif sev == 'HIGH' %}<span class="warn">HIGH</span>
+      {% elif sev == 'MEDIUM' %}<span class="info">MEDIUM</span>
+      {% elif sev == 'INFO' %}<span class="ok">INFO</span>
+      {% else %}—{% endif %}
+    </td>
+    <td>{{ item.get('detail', item.get('note', item.get('type',''))) }}</td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+  {% else %}
+  <p class="clean-msg">✓ {{ empty_msg }}</p>
+  {% endif %}
+{% endmacro %}
+
+<!-- ── WHOIS ── -->
+{% if results.get('whois') and not results.whois.get('error') %}
+<div class="section">
+  <div class="section-title">🔍 WHOIS Information</div>
+  <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+  {% for k,v in results.whois.items() %}
+  <tr><td>{{ k }}</td><td class="mono">{{ v }}</td></tr>
+  {% endfor %}
+  </tbody></table>
+</div>
+{% endif %}
+
+<!-- ── SSL ── -->
+{% if results.get('ssl') %}
+<div class="section">
+  <div class="section-title {% if not results.ssl.get('valid') %}danger{% elif results.ssl.get('expiring_soon') %}warning{% endif %}">🔒 SSL/TLS Certificate</div>
+  {% if results.ssl.get('error') %}
+  <div class="alert-box alert-danger">❌ {{ results.ssl.error }}</div>
+  {% else %}
+  <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+  <tr><td>Status</td><td>{% if results.ssl.valid %}<span class="ok">✓ Valid</span>{% else %}<span class="danger">✗ Invalid</span>{% endif %}</td></tr>
+  {% if results.ssl.get('issuer') %}<tr><td>Issuer</td><td>{{ results.ssl.issuer }}</td></tr>{% endif %}
+  {% if results.ssl.get('expires') %}<tr><td>Expires</td><td class="mono">{{ results.ssl.expires }} ({{ results.ssl.days_left }} days left)</td></tr>{% endif %}
+  {% if results.ssl.get('expiring_soon') %}<tr><td>Warning</td><td><span class="warn">⚠ Expiring within 30 days</span></td></tr>{% endif %}
+  </tbody></table>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- ── SECURITY HEADERS ── -->
+{% if results.get('headers') %}
+<div class="section">
+  <div class="section-title {% if results.headers.get('missing') %}warning{% else %}clean{% endif %}">🛡 Security Headers — Score: {{ results.headers.get('score',0) }}%</div>
+  <table><thead><tr><th>Header</th><th>Status</th><th>Value / Note</th></tr></thead><tbody>
+  {% for h,v in results.headers.get('present',{}).items() %}
+  <tr><td class="mono">{{ h }}</td><td><span class="ok">Present</span></td><td class="mono" style="font-size:10px">{{ v[:80] }}{% if v|length > 80 %}...{% endif %}</td></tr>
+  {% endfor %}
+  {% for item in results.headers.get('missing',[]) %}
+  <tr><td class="mono">{{ item.header }}</td><td><span class="danger">Missing</span></td><td style="font-size:11px;color:#888">{{ item.description }}</td></tr>
+  {% endfor %}
+  </tbody></table>
+</div>
+{% endif %}
+
+<!-- ── DNS ── -->
+{% if results.get('dns') and not results.dns.get('error') %}
+<div class="section">
+  <div class="section-title">🌐 DNS Information</div>
+  <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+  <tr><td>IP Address</td><td class="mono">{{ results.dns.get('ip') }}</td></tr>
+  {% if results.dns.get('ipv6') %}<tr><td>IPv6</td><td class="mono">{{ results.dns.ipv6 }}</td></tr>{% endif %}
+  </tbody></table>
+</div>
+{% endif %}
+
+<!-- ── SUBDOMAINS ── -->
+{% if results.get('subdomains') %}
+<div class="section">
+  <div class="section-title">📡 Subdomains ({{ results.subdomains.count }} found)</div>
+  {% if results.subdomains.found %}
+  <table><thead><tr><th>Subdomain</th><th>IP</th></tr></thead><tbody>
+  {% for s in results.subdomains.found %}<tr><td class="mono">{{ s.subdomain }}</td><td class="mono">{{ s.ip }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% else %}<p class="clean-msg">✓ No live subdomains found.</p>{% endif %}
+</div>
+{% endif %}
+
+<!-- ── PORTS ── -->
+{% if results.get('ports') %}
+<div class="section">
+  <div class="section-title {% if results.ports.open %}warning{% else %}clean{% endif %}">🚪 Open Ports ({{ results.ports.open|length }})</div>
+  {% if results.ports.open %}
+  <table><thead><tr><th>Port</th><th>Service</th><th>Risk</th></tr></thead><tbody>
+  {% for p in results.ports.open %}
+  <tr>
+    <td class="mono">{{ p.port }}</td><td>{{ p.service }}</td>
+    <td>{% if p.port in [23,3389,445] %}<span class="danger">High</span>{% elif p.port in [21,3306,27017,6379] %}<span class="warn">Medium</span>{% else %}<span class="ok">Low</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+  {% else %}<p class="clean-msg">✓ No sensitive ports open.</p>{% endif %}
+</div>
+{% endif %}
+
+<!-- ── XSS ── -->
+{% if results.get('xss') %}
+<div class="section">
+  <div class="section-title {% if results.xss.found %}danger{% else %}clean{% endif %}">⚡ XSS Detection</div>
+  {% if results.xss.found %}
+  <div class="alert-box alert-danger">🚨 Reflected XSS vulnerabilities found!</div>
+  <table><thead><tr><th>Parameter</th><th>Payload</th><th>Type</th></tr></thead><tbody>
+  {% for f in results.xss.findings %}<tr><td class="mono">{{ f.param }}</td><td class="mono" style="font-size:10px">{{ f.payload }}</td><td><span class="danger">{{ f.type }}</span></td></tr>{% endfor %}
+  </tbody></table>
+  {% else %}<p class="clean-msg">✓ No reflected XSS detected on common parameters.</p>{% endif %}
+</div>
+{% endif %}
+
+<!-- ── SQLI ── -->
+{% if results.get('sqli') %}
+<div class="section">
+  <div class="section-title {% if results.sqli.found %}danger{% else %}clean{% endif %}">💉 SQL Injection</div>
+  {% if results.sqli.found %}
+  <div class="alert-box alert-danger">🚨 SQL injection errors detected!</div>
+  <table><thead><tr><th>Parameter</th><th>Payload</th><th>Error</th></tr></thead><tbody>
+  {% for f in results.sqli.findings %}<tr><td class="mono">{{ f.param }}</td><td class="mono" style="font-size:10px">{{ f.payload }}</td><td class="mono">{{ f.error }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% else %}<p class="clean-msg">✓ No SQL injection errors detected.</p>{% endif %}
+</div>
+{% endif %}
+
+<!-- ── FUZZER ── -->
+{% if results.get('fuzzer') %}
+<div class="section">
+  <div class="section-title {% if results.fuzzer.count > 0 %}warning{% else %}clean{% endif %}">🔎 URL Fuzzer ({{ results.fuzzer.count }} found)</div>
+  {% if results.fuzzer.found %}
+  <table><thead><tr><th>URL</th><th>Status</th></tr></thead><tbody>
+  {% for item in results.fuzzer.found %}<tr><td class="mono" style="font-size:10px">{{ item.url }}</td><td>{% if item.status==200 %}<span class="danger">200</span>{% else %}<span class="warn">{{ item.status }}</span>{% endif %}</td></tr>{% endfor %}
+  </tbody></table>
+  {% else %}<p class="clean-msg">✓ No interesting paths found.</p>{% endif %}
+</div>
+{% endif %}
+
+<!-- ── TECH ── -->
+{% if results.get('tech') and results.tech.get('detected') %}
+<div class="section">
+  <div class="section-title">🧩 Technology Stack</div>
+  <table><thead><tr><th>Type</th><th>Detected</th></tr></thead><tbody>
+  {% for k,v in results.tech.detected.items() %}<tr><td>{{ k }}</td><td>{{ v }}</td></tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endif %}
+
+<!-- ── ENV EXPOSURE ── -->
+{% if results.get('env_exposure') %}
+<div class="section">
+  <div class="section-title {% if results.env_exposure.count > 0 %}danger{% else %}clean{% endif %}">🌿 .ENV File Exposure ({{ results.env_exposure.count }})</div>
+  {{ findings_table(results.env_exposure.found, 'No .env files exposed.') }}
+</div>
+{% endif %}
+
+<!-- ── GIT EXPOSURE ── -->
+{% if results.get('git_exposure') %}
+<div class="section">
+  <div class="section-title {% if results.git_exposure.count > 0 %}danger{% else %}clean{% endif %}">📦 Git / SVN Exposure ({{ results.git_exposure.count }})</div>
+  {{ findings_table(results.git_exposure.found, 'No Git/SVN files exposed.') }}
+</div>
+{% endif %}
+
+<!-- ── SSH KEYS ── -->
+{% if results.get('ssh_keys') %}
+<div class="section">
+  <div class="section-title {% if results.ssh_keys.count > 0 %}danger{% else %}clean{% endif %}">🗝 SSH / Private Keys ({{ results.ssh_keys.count }})</div>
+  {{ findings_table(results.ssh_keys.found, 'No SSH/private keys exposed.') }}
+</div>
+{% endif %}
+
+<!-- ── JSON SECRETS ── -->
+{% if results.get('json_secrets') %}
+<div class="section">
+  <div class="section-title {% if results.json_secrets.count > 0 %}danger{% else %}clean{% endif %}">🔑 JSON Secrets ({{ results.json_secrets.count }})</div>
+  {{ findings_table(results.json_secrets.found, 'No JSON secret files exposed.') }}
+</div>
+{% endif %}
+
+<!-- ── JS SECRETS ── -->
+{% if results.get('js_secrets') %}
+<div class="section">
+  <div class="section-title {% if results.js_secrets.count > 0 %}warning{% else %}clean{% endif %}">📜 JS File Secrets ({{ results.js_secrets.count }})</div>
+  {{ findings_table(results.js_secrets.found, 'No secrets found in JS files.') }}
+</div>
+{% endif %}
+
+<!-- ── YAML CONFIG ── -->
+{% if results.get('yaml_config') %}
+<div class="section">
+  <div class="section-title {% if results.yaml_config.count > 0 %}warning{% else %}clean{% endif %}">📄 YAML Config Leak ({{ results.yaml_config.count }})</div>
+  {{ findings_table(results.yaml_config.found, 'No YAML config files exposed.') }}
+</div>
+{% endif %}
+
+<!-- ── XML CONFIG ── -->
+{% if results.get('xml_config') %}
+<div class="section">
+  <div class="section-title {% if results.xml_config.count > 0 %}warning{% else %}clean{% endif %}">🗂 XML Config Leak ({{ results.xml_config.count }})</div>
+  {{ findings_table(results.xml_config.found, 'No XML config files exposed.') }}
+</div>
+{% endif %}
+
+<!-- ── SENSITIVE CONFIG ── -->
+{% if results.get('sensitive_config') %}
+<div class="section">
+  <div class="section-title {% if results.sensitive_config.count > 0 %}warning{% else %}clean{% endif %}">🔏 Sensitive Config ({{ results.sensitive_config.count }})</div>
+  {{ findings_table(results.sensitive_config.found, 'No sensitive config files exposed.') }}
+</div>
+{% endif %}
+
+<!-- ── FTP CONFIG ── -->
+{% if results.get('ftp_config') %}
+<div class="section">
+  <div class="section-title {% if results.ftp_config.count > 0 %}danger{% else %}clean{% endif %}">📡 FTP Config Leak ({{ results.ftp_config.count }})</div>
+  {{ findings_table(results.ftp_config.found, 'No FTP config files exposed.') }}
+</div>
+{% endif %}
+
+<!-- ── SQL BACKUP ── -->
+{% if results.get('sql_backup') %}
+<div class="section">
+  <div class="section-title {% if results.sql_backup.count > 0 %}danger{% else %}clean{% endif %}">🗄 SQL Backup Exposure ({{ results.sql_backup.count }})</div>
+  {% if results.sql_backup.found %}
+  <div class="alert-box alert-danger">🚨 Database backup files are publicly accessible!</div>
+  {% endif %}
+  {{ findings_table(results.sql_backup.found, 'No SQL backup files exposed.') }}
+</div>
+{% endif %}
+
+<!-- ── BACKUP FILES ── -->
+{% if results.get('backup_files') %}
+<div class="section">
+  <div class="section-title {% if results.backup_files.count > 0 %}warning{% else %}clean{% endif %}">💾 Backup File Exposure ({{ results.backup_files.count }})</div>
+  {{ findings_table(results.backup_files.found, 'No backup archives exposed.') }}
+</div>
+{% endif %}
+
+<!-- ── PHP BACKUP ── -->
+{% if results.get('php_backup') %}
+<div class="section">
+  <div class="section-title {% if results.php_backup.count > 0 %}danger{% else %}clean{% endif %}">🐘 PHP Config Backup ({{ results.php_backup.count }})</div>
+  {{ findings_table(results.php_backup.found, 'No PHP config backups exposed.') }}
+</div>
+{% endif %}
+
+<!-- ── PHP INFO ── -->
+{% if results.get('php_info') %}
+<div class="section">
+  <div class="section-title {% if results.php_info.count > 0 %}warning{% else %}clean{% endif %}">ℹ PHP Info / Adminer ({{ results.php_info.count }})</div>
+  {{ findings_table(results.php_info.found, 'No phpinfo/adminer pages found.') }}
+</div>
+{% endif %}
+
+<!-- ── FILE MANAGER ── -->
+{% if results.get('file_manager') %}
+<div class="section">
+  <div class="section-title {% if results.file_manager.count > 0 %}danger{% else %}clean{% endif %}">🗃 File Manager Exposed ({{ results.file_manager.count }})</div>
+  {{ findings_table(results.file_manager.found, 'No file managers found.') }}
+</div>
+{% endif %}
+
+<!-- ── DIR LISTING ── -->
+{% if results.get('dir_listing') %}
+<div class="section">
+  <div class="section-title {% if results.dir_listing.count > 0 %}warning{% else %}clean{% endif %}">📁 Directory Listing ({{ results.dir_listing.count }})</div>
+  {{ findings_table(results.dir_listing.found, 'No open directory listings found.') }}
+</div>
+{% endif %}
+
+<!-- ── LOG EXPOSURE ── -->
+{% if results.get('log_exposure') %}
+<div class="section">
+  <div class="section-title {% if results.log_exposure.count > 0 %}warning{% else %}clean{% endif %}">📋 Log File Exposure ({{ results.log_exposure.count }})</div>
+  {{ findings_table(results.log_exposure.found, 'No log files exposed.') }}
+</div>
+{% endif %}
+
+<!-- ── ADMIN FINDER ── -->
+{% if results.get('admin_finder') %}
+<div class="section">
+  <div class="section-title {% if results.admin_finder.count > 0 %}warning{% else %}clean{% endif %}">🔐 Admin Panel Finder ({{ results.admin_finder.count }})</div>
+  {{ findings_table(results.admin_finder.found, 'No admin panels found.') }}
+</div>
+{% endif %}
+
+<!-- ── SWAGGER ── -->
+{% if results.get('swagger') %}
+<div class="section">
+  <div class="section-title {% if results.swagger.count > 0 %}warning{% else %}clean{% endif %}">📋 Swagger / OpenAPI ({{ results.swagger.count }})</div>
+  {{ findings_table(results.swagger.found, 'No Swagger/OpenAPI endpoints found.') }}
+</div>
+{% endif %}
+
+<!-- ── GRAPHQL ── -->
+{% if results.get('graphql') %}
+<div class="section">
+  <div class="section-title {% if results.graphql.count > 0 %}warning{% else %}clean{% endif %}">◈ GraphQL Introspection ({{ results.graphql.count }})</div>
+  {{ findings_table(results.graphql.found, 'No GraphQL endpoints found.') }}
+</div>
+{% endif %}
+
+<!-- ── TOMCAT ── -->
+{% if results.get('tomcat') %}
+<div class="section">
+  <div class="section-title {% if results.tomcat.count > 0 %}warning{% else %}clean{% endif %}">☕ Apache Tomcat ({{ results.tomcat.count }})</div>
+  {{ findings_table(results.tomcat.found, 'No Tomcat pages found.') }}
+</div>
+{% endif %}
+
+<!-- ── JK NGINX ── -->
+{% if results.get('jk_nginx') %}
+<div class="section">
+  <div class="section-title {% if results.jk_nginx.count > 0 %}warning{% else %}clean{% endif %}">⚙ JK / Nginx Status ({{ results.jk_nginx.count }})</div>
+  {{ findings_table(results.jk_nginx.found, 'No status pages found.') }}
+</div>
+{% endif %}
+
+<!-- ── LARAVEL ── -->
+{% if results.get('laravel_vulns') %}
+<div class="section">
+  <div class="section-title {% if results.laravel_vulns.count > 0 %}danger{% else %}clean{% endif %}">🔥 Laravel Vulnerabilities ({{ results.laravel_vulns.count }})</div>
+  {{ findings_table(results.laravel_vulns.found, 'No Laravel vulnerabilities found.') }}
+</div>
+{% endif %}
+
+<!-- ── DJANGO ── -->
+{% if results.get('django_debug') %}
+<div class="section">
+  <div class="section-title {% if results.django_debug.count > 0 %}warning{% else %}clean{% endif %}">🐍 Django Debug Mode ({{ results.django_debug.count }})</div>
+  {{ findings_table(results.django_debug.found, 'No Django debug issues found.') }}
+</div>
+{% endif %}
+
+<!-- ── SPRING BOOT ── -->
+{% if results.get('spring_boot') %}
+<div class="section">
+  <div class="section-title {% if results.spring_boot.count > 0 %}warning{% else %}clean{% endif %}">🌱 Spring Boot Actuator ({{ results.spring_boot.count }})</div>
+  {{ findings_table(results.spring_boot.found, 'No actuator endpoints found.') }}
+</div>
+{% endif %}
+
+<!-- ── RUBY ── -->
+{% if results.get('ruby_config') %}
+<div class="section">
+  <div class="section-title {% if results.ruby_config.count > 0 %}warning{% else %}clean{% endif %}">💎 Ruby / Rails Config ({{ results.ruby_config.count }})</div>
+  {{ findings_table(results.ruby_config.found, 'No Ruby/Rails config files exposed.') }}
+</div>
+{% endif %}
+
+<!-- ── JENKINS ── -->
+{% if results.get('jenkins') %}
+<div class="section">
+  <div class="section-title {% if results.jenkins.count > 0 %}warning{% else %}clean{% endif %}">🔧 Jenkins Exposure ({{ results.jenkins.count }})</div>
+  {{ findings_table(results.jenkins.found, 'No Jenkins exposure found.') }}
+</div>
+{% endif %}
+
+<!-- ── IIS TELERIK ── -->
+{% if results.get('iis_telerik') %}
+<div class="section">
+  <div class="section-title {% if results.iis_telerik.count > 0 %}warning{% else %}clean{% endif %}">🪟 IIS / Telerik ({{ results.iis_telerik.count }})</div>
+  {{ findings_table(results.iis_telerik.found, 'No IIS/Telerik issues found.') }}
+</div>
+{% endif %}
+
+<!-- ── WP VULNS ── -->
+{% if results.get('wp_vulns') %}
+<div class="section">
+  <div class="section-title {% if results.wp_vulns.count > 0 %}warning{% else %}clean{% endif %}">🌐 WordPress Vulnerabilities ({{ results.wp_vulns.count }})</div>
+  {{ findings_table(results.wp_vulns.found, 'No WordPress vulnerabilities found.') }}
+</div>
+{% endif %}
+
+<!-- ── WP SETUP ── -->
+{% if results.get('wp_setup') %}
+<div class="section">
+  <div class="section-title {% if results.wp_setup.count > 0 %}danger{% else %}clean{% endif %}">⚙ WordPress Setup / Install ({{ results.wp_setup.count }})</div>
+  {{ findings_table(results.wp_setup.found, 'No WP setup/install pages found.') }}
+</div>
+{% endif %}
+
+<!-- FOOTER -->
+<div class="report-footer">
+  <span>⬡ WebSecure360 — Web Security Assessment Platform</span>
+  <span>{{ scan.completed_at.strftime('%Y-%m-%d %H:%M UTC') if scan.completed_at else '' }} · For authorized use only</span>
+</div>
+
+</body>
+</html>

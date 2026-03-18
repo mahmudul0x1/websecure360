@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block title %}Pricing{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="container">
+    <div class="section-header center">
+      <h1 class="page-title">Simple, transparent pricing</h1>
+      <p class="page-sub">Start free. Scale as you grow. No hidden fees.</p>
+    </div>
+
+    <div class="plans-row-3">
+
+      <div class="plan-card">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">$0<span>/month</span></div>
+        <p class="plan-desc">For individuals trying out WebSecure360.</p>
+        <ul class="plan-features">
+          <li>✓ 5 scans / month</li>
+          <li>✓ 2 projects</li>
+          <li>✓ 4 scan modules</li>
+          <li>✓ Scan history</li>
+          <li class="dim">✗ PDF reports</li>
+          <li class="dim">✗ Advanced modules</li>
+          <li class="dim">✗ API access</li>
+          <li class="dim">✗ Priority support</li>
+        </ul>
+        {% if current_user.is_authenticated %}
+          {% if current_user.plan == 'free' %}
+            <div class="btn-ghost btn-full current-plan">Current Plan</div>
+          {% endif %}
+        {% else %}
+          <a href="{{ url_for('register') }}" class="btn-ghost btn-full">Get Started Free</a>
+        {% endif %}
+      </div>
+
+      <div class="plan-card plan-featured">
+        <div class="plan-badge-top">Most Popular</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">$15<span>/month</span></div>
+        <p class="plan-desc">For security professionals and freelancers.</p>
+        <ul class="plan-features">
+          <li>✓ 100 scans / month</li>
+          <li>✓ 20 projects</li>
+          <li>✓ All 10 scan modules</li>
+          <li>✓ PDF report download</li>
+          <li>✓ Subdomain enumeration</li>
+          <li>✓ Port scanner</li>
+          <li>✓ XSS & SQLi detection</li>
+          <li>✓ REST API access</li>
+          <li class="dim">✗ Priority support</li>
+        </ul>
+        {% if current_user.is_authenticated %}
+          {% if current_user.plan == 'pro' %}
+            <div class="btn-primary btn-full current-plan">Current Plan ✓</div>
+          {% elif current_user.plan == 'enterprise' %}
+            <div class="btn-ghost btn-full current-plan">Downgrade</div>
+          {% else %}
+            <form method="POST" action="{{ url_for('checkout') }}">
+              <input type="hidden" name="plan" value="pro">
+              <button type="submit" class="btn-primary btn-full">Upgrade to Pro — $15/mo</button>
+            </form>
+          {% endif %}
+        {% else %}
+          <a href="{{ url_for('register') }}" class="btn-primary btn-full">Start Pro</a>
+        {% endif %}
+      </div>
+
+      <div class="plan-card plan-enterprise">
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-price">$49<span>/month</span></div>
+        <p class="plan-desc">For teams and security consultancies.</p>
+        <ul class="plan-features">
+          <li>✓ 1,000 scans / month</li>
+          <li>✓ 100 projects</li>
+          <li>✓ All 10 scan modules</li>
+          <li>✓ PDF reports</li>
+          <li>✓ REST API access</li>
+          <li>✓ Priority email support</li>
+          <li>✓ Early access to new features</li>
+        </ul>
+        {% if current_user.is_authenticated %}
+          {% if current_user.plan == 'enterprise' %}
+            <div class="btn-primary btn-full current-plan">Current Plan ✓</div>
+          {% else %}
+            <form method="POST" action="{{ url_for('checkout') }}">
+              <input type="hidden" name="plan" value="enterprise">
+              <button type="submit" class="btn-primary btn-full">Upgrade to Enterprise — $49/mo</button>
+            </form>
+          {% endif %}
+        {% else %}
+          <a href="{{ url_for('register') }}" class="btn-primary btn-full">Start Enterprise</a>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <div class="comparison-wrap">
+      <h2 class="comparison-title">Full comparison</h2>
+      <div class="table-wrap">
+        <table class="data-table comparison-table">
+          <thead>
+            <tr><th>Feature</th><th class="center">Free</th><th class="center accent-col">Pro</th><th class="center">Enterprise</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Scans / month</td><td class="center">5</td><td class="center accent-col">100</td><td class="center">1,000</td></tr>
+            <tr><td>Projects</td><td class="center">2</td><td class="center accent-col">20</td><td class="center">100</td></tr>
+            <tr><td>WHOIS, SSL, Headers, DNS</td><td class="center">✓</td><td class="center accent-col">✓</td><td class="center">✓</td></tr>
+            <tr><td>Subdomain enumeration</td><td class="center dim">✗</td><td class="center accent-col">✓</td><td class="center">✓</td></tr>
+            <tr><td>Port scanner</td><td class="center dim">✗</td><td class="center accent-col">✓</td><td class="center">✓</td></tr>
+            <tr><td>URL fuzzer</td><td class="center dim">✗</td><td class="center accent-col">✓</td><td class="center">✓</td></tr>
+            <tr><td>XSS & SQL injection</td><td class="center dim">✗</td><td class="center accent-col">✓</td><td class="center">✓</td></tr>
+            <tr><td>Tech fingerprinting</td><td class="center dim">✗</td><td class="center accent-col">✓</td><td class="center">✓</td></tr>
+            <tr><td>PDF reports</td><td class="center dim">✗</td><td class="center accent-col">✓</td><td class="center">✓</td></tr>
+            <tr><td>REST API access</td><td class="center dim">✗</td><td class="center accent-col">✓</td><td class="center">✓</td></tr>
+            <tr><td>Priority support</td><td class="center dim">✗</td><td class="center accent-col dim">✗</td><td class="center">✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="pricing-note">Payments processed via Stripe. Cancel anytime. All prices in USD.</p>
+  </div>
+</div>
+{% endblock %}

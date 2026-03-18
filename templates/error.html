@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}{{ code }} Error{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card" style="text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">{% if code == 404 %}🔍{% else %}⚠{% endif %}</div>
+    <h1 class="auth-title">{{ code }}</h1>
+    <p class="page-sub">{{ message }}</p>
+    <a href="{{ url_for('index') }}" class="btn-primary" style="margin-top:24px">Go Home</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,584 @@
+{% extends 'base.html' %}
+{% block title %}Scan Results{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <div class="breadcrumb">
+          <a href="{{ url_for('projects') }}">Projects</a> /
+          <a href="{{ url_for('project_detail', project_id=project.id) }}">{{ project.name }}</a> /
+          Results
+        </div>
+        <h1 class="page-title">Scan Results</h1>
+        <p class="page-sub mono">{{ scan.target }}</p>
+      </div>
+      <div class="page-header-actions">
+        {% if current_user.plan_config().pdf_report %}
+          <a href="{{ url_for('download_report', scan_id=scan.scan_id) }}" class="btn-ghost">⬇ Download Report</a>
+        {% else %}
+          <a href="{{ url_for('pricing') }}" class="btn-ghost" title="Pro feature">⬇ Report (Pro)</a>
+        {% endif %}
+        <a href="{{ url_for('new_scan', project_id=project.id) }}" class="btn-primary">+ New Scan</a>
+      </div>
+    </div>
+
+    <!-- RISK SCORE -->
+    <div class="risk-overview">
+      <div class="risk-score-block risk-{{ 'high' if scan.risk_score >= 60 else 'medium' if scan.risk_score >= 30 else 'low' }}">
+        <div class="risk-number">{{ scan.risk_score }}</div>
+        <div class="risk-label">Risk Score</div>
+      </div>
+      <div class="risk-meta">
+        <div class="risk-meta-item"><span>Target</span><strong class="mono">{{ scan.target }}</strong></div>
+        <div class="risk-meta-item"><span>Modules Run</span><strong>{{ scan.modules_list()|length }}</strong></div>
+        <div class="risk-meta-item"><span>Completed</span><strong>{{ scan.completed_at.strftime('%b %d, %Y %H:%M') if scan.completed_at else 'N/A' }}</strong></div>
+      </div>
+    </div>
+
+    <div class="results-grid">
+
+    {# ── MACRO for findings list ── #}
+    {% macro findings_list(items, empty_msg) %}
+      {% if items %}
+        {% for item in items %}
+        <div class="finding-row {% if item.get('severity') == 'CRITICAL' %}sev-critical{% elif item.get('severity') == 'HIGH' %}sev-high{% elif item.get('severity') == 'MEDIUM' %}sev-medium{% endif %}">
+          {% if item.get('type') %}<div class="finding-type">{{ item.type }} {% if item.get('severity') %}<span class="sev-badge sev-{{ item.severity|lower }}">{{ item.severity }}</span>{% endif %}</div>{% endif %}
+          {% if item.get('url') %}<div class="kv-row"><span class="kv-key">URL</span><span class="kv-val mono small"><a href="{{ item.url }}" target="_blank">{{ item.url }}</a></span></div>{% endif %}
+          {% if item.get('path') %}<div class="kv-row"><span class="kv-key">Path</span><span class="kv-val mono">{{ item.path }}</span></div>{% endif %}
+          {% if item.get('detail') %}<div class="kv-row"><span class="kv-key">Detail</span><span class="kv-val muted small">{{ item.detail }}</span></div>{% endif %}
+          {% if item.get('note') %}<div class="kv-row"><span class="kv-key">Note</span><span class="kv-val muted small">{{ item.note }}</span></div>{% endif %}
+          {% if item.get('users') %}<div class="kv-row"><span class="kv-key">Users</span><span class="kv-val mono small">{{ item.users|join(', ') }}</span></div>{% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-green">✓ {{ empty_msg }}</p>
+      {% endif %}
+    {% endmacro %}
+
+    {# ── WHOIS ── #}
+    {% if results.get('whois') and not results.whois.get('error') %}
+    <div class="result-card">
+      <div class="result-card-header"><span class="result-icon">🔍</span> WHOIS Information</div>
+      <div class="result-body">
+        {% for k, v in results.whois.items() %}
+        <div class="kv-row"><span class="kv-key">{{ k }}</span><span class="kv-val mono">{{ v }}</span></div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── SSL ── #}
+    {% if results.get('ssl') %}
+    <div class="result-card {% if not results.ssl.get('valid') %}result-card-danger{% elif results.ssl.get('expiring_soon') %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🔒</span> SSL/TLS Certificate</div>
+      <div class="result-body">
+        {% if results.ssl.get('error') %}
+          <div class="result-alert alert-danger">❌ {{ results.ssl.error }}</div>
+        {% else %}
+          <div class="kv-row"><span class="kv-key">Valid</span><span class="kv-val">{% if results.ssl.valid %}✅ Yes{% else %}❌ No{% endif %}</span></div>
+          <div class="kv-row"><span class="kv-key">Issuer</span><span class="kv-val">{{ results.ssl.issuer }}</span></div>
+          <div class="kv-row"><span class="kv-key">Expires</span><span class="kv-val mono">{{ results.ssl.expires }} ({{ results.ssl.days_left }} days)</span></div>
+          {% if results.ssl.get('warning') %}<div class="result-alert alert-warning">⚠ {{ results.ssl.warning }}</div>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── HEADERS ── #}
+    {% if results.get('headers') %}
+    <div class="result-card {% if results.headers.get('missing') %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🛡</span> Security Headers <span class="header-score">{{ results.headers.get('score',0) }}%</span></div>
+      <div class="result-body">
+        {% for h, v in results.headers.get('present',{}).items() %}
+        <div class="kv-row"><span class="kv-key text-green">✓ {{ h }}</span><span class="kv-val mono small">{{ v[:60] }}{% if v|length > 60 %}...{% endif %}</span></div>
+        {% endfor %}
+        {% for item in results.headers.get('missing',[]) %}
+        <div class="kv-row"><span class="kv-key text-red">✗ {{ item.header }}</span><span class="kv-val muted small">{{ item.description }}</span></div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── DNS ── #}
+    {% if results.get('dns') and not results.dns.get('error') %}
+    <div class="result-card">
+      <div class="result-card-header"><span class="result-icon">🌐</span> DNS Information</div>
+      <div class="result-body">
+        <div class="kv-row"><span class="kv-key">IP</span><span class="kv-val mono">{{ results.dns.get('ip') }}</span></div>
+        {% if results.dns.get('ipv6') %}<div class="kv-row"><span class="kv-key">IPv6</span><span class="kv-val mono">{{ results.dns.ipv6 }}</span></div>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── SUBDOMAINS ── #}
+    {% if results.get('subdomains') %}
+    <div class="result-card">
+      <div class="result-card-header"><span class="result-icon">📡</span> Subdomains ({{ results.subdomains.count }})</div>
+      <div class="result-body">
+        {% if results.subdomains.found %}
+          {% for sub in results.subdomains.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ sub.subdomain }}</span><span class="kv-val mono muted">{{ sub.ip }}</span></div>
+          {% endfor %}
+        {% else %}<p class="muted">No subdomains found.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── PORTS ── #}
+    {% if results.get('ports') %}
+    <div class="result-card {% if results.ports.open %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🚪</span> Open Ports ({{ results.ports.open|length }})</div>
+      <div class="result-body">
+        {% if results.ports.open %}
+          {% for p in results.ports.open %}
+          <div class="kv-row"><span class="kv-key mono">Port {{ p.port }}</span><span class="kv-val">{{ p.service }}</span></div>
+          {% endfor %}
+        {% else %}<p class="muted">No sensitive ports open.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── FUZZER ── #}
+    {% if results.get('fuzzer') %}
+    <div class="result-card {% if results.fuzzer.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🔎</span> URL Fuzzer ({{ results.fuzzer.count }} found)</div>
+      <div class="result-body">
+        {% if results.fuzzer.found %}
+          {% for item in results.fuzzer.found %}
+          <div class="kv-row"><span class="kv-key mono small">{{ item.url }}</span><span class="kv-val">{{ item.status }}</span></div>
+          {% endfor %}
+        {% else %}<p class="muted">No interesting paths found.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── XSS ── #}
+    {% if results.get('xss') %}
+    <div class="result-card {% if results.xss.found %}result-card-danger{% endif %}">
+      <div class="result-card-header"><span class="result-icon">⚡</span> XSS Detection</div>
+      <div class="result-body">
+        {% if results.xss.found %}
+          <div class="result-alert alert-danger">🚨 XSS vulnerabilities found!</div>
+          {% for f in results.xss.findings %}
+          <div class="kv-row"><span class="kv-key">Param</span><span class="kv-val mono">{{ f.param }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No reflected XSS detected.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── SQLI ── #}
+    {% if results.get('sqli') %}
+    <div class="result-card {% if results.sqli.found %}result-card-danger{% endif %}">
+      <div class="result-card-header"><span class="result-icon">💉</span> SQL Injection</div>
+      <div class="result-body">
+        {% if results.sqli.found %}
+          <div class="result-alert alert-danger">🚨 Potential SQL injection detected!</div>
+          {% for f in results.sqli.findings %}
+          <div class="kv-row"><span class="kv-key">Param</span><span class="kv-val mono">{{ f.param }}</span></div>
+          <div class="kv-row"><span class="kv-key">Error</span><span class="kv-val muted small">{{ f.error }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No SQL injection errors detected.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── TECH ── #}
+    {% if results.get('tech') and results.tech.get('detected') %}
+    <div class="result-card">
+      <div class="result-card-header"><span class="result-icon">🧩</span> Technology Stack</div>
+      <div class="result-body">
+        {% for k, v in results.tech.detected.items() %}
+        <div class="kv-row"><span class="kv-key">{{ k }}</span><span class="kv-val">{{ v }}</span></div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── ADMIN FINDER ── #}
+    {% if results.get('admin_finder') %}
+    <div class="result-card {% if results.admin_finder.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🔐</span> Admin Panel Finder ({{ results.admin_finder.count }} found)</div>
+      <div class="result-body">
+        {% if results.admin_finder.found %}
+          {% for item in results.admin_finder.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small"><a href="{{ item.url }}" target="_blank">{{ item.url }}</a></span></div>
+          {% endfor %}
+        {% else %}<p class="muted">No admin panels found.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── SWAGGER ── #}
+    {% if results.get('swagger') %}
+    <div class="result-card {% if results.swagger.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">📋</span> Swagger / OpenAPI ({{ results.swagger.count }} found)</div>
+      <div class="result-body">
+        {% if results.swagger.found %}
+          {% for item in results.swagger.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small"><a href="{{ item.url }}" target="_blank">Open ↗</a></span></div>
+          {% endfor %}
+        {% else %}<p class="muted">No Swagger/OpenAPI endpoints found.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── ENV EXPOSURE ── #}
+    {% if results.get('env_exposure') %}
+    <div class="result-card {% if results.env_exposure.count > 0 %}result-card-danger{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🌿</span> .ENV File Exposure ({{ results.env_exposure.count }} found)</div>
+      <div class="result-body">
+        {% if results.env_exposure.found %}
+          <div class="result-alert alert-danger">🚨 CRITICAL — .env files exposed!</div>
+          {% for item in results.env_exposure.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No .env files exposed.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── GIT EXPOSURE ── #}
+    {% if results.get('git_exposure') %}
+    <div class="result-card {% if results.git_exposure.count > 0 %}result-card-danger{% endif %}">
+      <div class="result-card-header"><span class="result-icon">📦</span> Git / SVN Exposure ({{ results.git_exposure.count }} found)</div>
+      <div class="result-body">
+        {% if results.git_exposure.found %}
+          <div class="result-alert alert-danger">🚨 Source control files exposed!</div>
+          {% for item in results.git_exposure.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No Git/SVN files exposed.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── SSH KEYS ── #}
+    {% if results.get('ssh_keys') %}
+    <div class="result-card {% if results.ssh_keys.count > 0 %}result-card-danger{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🗝</span> SSH / Private Keys ({{ results.ssh_keys.count }} found)</div>
+      <div class="result-body">
+        {% if results.ssh_keys.found %}
+          <div class="result-alert alert-danger">🚨 CRITICAL — Private keys exposed!</div>
+          {% for item in results.ssh_keys.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No SSH/private keys exposed.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── JSON SECRETS ── #}
+    {% if results.get('json_secrets') %}
+    <div class="result-card {% if results.json_secrets.count > 0 %}result-card-danger{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🔑</span> JSON Secrets ({{ results.json_secrets.count }} found)</div>
+      <div class="result-body">
+        {% if results.json_secrets.found %}
+          {% for item in results.json_secrets.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No JSON secret files exposed.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── JS SECRETS ── #}
+    {% if results.get('js_secrets') %}
+    <div class="result-card {% if results.js_secrets.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">📜</span> JS File Secrets ({{ results.js_secrets.count }} found)</div>
+      <div class="result-body">
+        {% if results.js_secrets.found %}
+          {% for item in results.js_secrets.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No secrets found in JS files.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── YAML CONFIG ── #}
+    {% if results.get('yaml_config') %}
+    <div class="result-card {% if results.yaml_config.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">📄</span> YAML Config Leak ({{ results.yaml_config.count }} found)</div>
+      <div class="result-body">
+        {% if results.yaml_config.found %}
+          {% for item in results.yaml_config.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No YAML config files exposed.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── XML CONFIG ── #}
+    {% if results.get('xml_config') %}
+    <div class="result-card {% if results.xml_config.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🗂</span> XML Config Leak ({{ results.xml_config.count }} found)</div>
+      <div class="result-body">
+        {% if results.xml_config.found %}
+          {% for item in results.xml_config.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No XML config files exposed.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── SENSITIVE CONFIG ── #}
+    {% if results.get('sensitive_config') %}
+    <div class="result-card {% if results.sensitive_config.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🔏</span> Sensitive Config ({{ results.sensitive_config.count }} found)</div>
+      <div class="result-body">
+        {% if results.sensitive_config.found %}
+          {% for item in results.sensitive_config.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No sensitive config files exposed.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── FTP CONFIG ── #}
+    {% if results.get('ftp_config') %}
+    <div class="result-card {% if results.ftp_config.count > 0 %}result-card-danger{% endif %}">
+      <div class="result-card-header"><span class="result-icon">📡</span> FTP Config Leak ({{ results.ftp_config.count }} found)</div>
+      <div class="result-body">
+        {% if results.ftp_config.found %}
+          {% for item in results.ftp_config.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No FTP config files exposed.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── SQL BACKUP ── #}
+    {% if results.get('sql_backup') %}
+    <div class="result-card {% if results.sql_backup.count > 0 %}result-card-danger{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🗄</span> SQL Backup Exposure ({{ results.sql_backup.count }} found)</div>
+      <div class="result-body">
+        {% if results.sql_backup.found %}
+          <div class="result-alert alert-danger">🚨 Database backup files are publicly accessible!</div>
+          {% for item in results.sql_backup.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No SQL backup files found.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── BACKUP FILES ── #}
+    {% if results.get('backup_files') %}
+    <div class="result-card {% if results.backup_files.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">💾</span> Backup File Exposure ({{ results.backup_files.count }} found)</div>
+      <div class="result-body">
+        {% if results.backup_files.found %}
+          {% for item in results.backup_files.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No backup archives exposed.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── PHP BACKUP ── #}
+    {% if results.get('php_backup') %}
+    <div class="result-card {% if results.php_backup.count > 0 %}result-card-danger{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🐘</span> PHP Config Backup ({{ results.php_backup.count }} found)</div>
+      <div class="result-body">
+        {% if results.php_backup.found %}
+          <div class="result-alert alert-danger">🚨 PHP config backup files exposed!</div>
+          {% for item in results.php_backup.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No PHP config backups found.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── PHP INFO ── #}
+    {% if results.get('php_info') %}
+    <div class="result-card {% if results.php_info.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">ℹ</span> PHP Info / Adminer ({{ results.php_info.count }} found)</div>
+      <div class="result-body">
+        {% if results.php_info.found %}
+          {% for item in results.php_info.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small"><a href="{{ item.url }}" target="_blank">{{ item.url }}</a></span></div>
+          {% endfor %}
+        {% else %}<p class="muted">No phpinfo/adminer pages found.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── FILE MANAGER ── #}
+    {% if results.get('file_manager') %}
+    <div class="result-card {% if results.file_manager.count > 0 %}result-card-danger{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🗃</span> File Manager Exposed ({{ results.file_manager.count }} found)</div>
+      <div class="result-body">
+        {% if results.file_manager.found %}
+          <div class="result-alert alert-danger">🚨 File manager accessible!</div>
+          {% for item in results.file_manager.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="muted">No file managers found.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── DIR LISTING ── #}
+    {% if results.get('dir_listing') %}
+    <div class="result-card {% if results.dir_listing.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">📁</span> Directory Listing ({{ results.dir_listing.count }} found)</div>
+      <div class="result-body">
+        {% if results.dir_listing.found %}
+          {% for item in results.dir_listing.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No open directory listings.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── LOG EXPOSURE ── #}
+    {% if results.get('log_exposure') %}
+    <div class="result-card {% if results.log_exposure.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">📋</span> Log File Exposure ({{ results.log_exposure.count }} found)</div>
+      <div class="result-body">
+        {% if results.log_exposure.found %}
+          {% for item in results.log_exposure.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="text-green">✓ No log files exposed.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── GRAPHQL ── #}
+    {% if results.get('graphql') %}
+    <div class="result-card {% if results.graphql.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">◈</span> GraphQL Introspection ({{ results.graphql.count }} found)</div>
+      <div class="result-body">
+        {% if results.graphql.found %}
+          {% for item in results.graphql.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val">{{ item.get('method','GET') }} {% if item.get('note') %}- {{ item.note }}{% endif %}</span></div>
+          {% endfor %}
+        {% else %}<p class="muted">No GraphQL endpoints found.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── TOMCAT ── #}
+    {% if results.get('tomcat') %}
+    <div class="result-card {% if results.tomcat.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">☕</span> Apache Tomcat ({{ results.tomcat.count }} found)</div>
+      <div class="result-body">
+        {% if results.tomcat.found %}
+          {% for item in results.tomcat.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val">{{ item.get('note','') }} ({{ item.status }})</span></div>
+          {% endfor %}
+        {% else %}<p class="muted">No Tomcat pages found.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── JK NGINX ── #}
+    {% if results.get('jk_nginx') %}
+    <div class="result-card {% if results.jk_nginx.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">⚙</span> JK / Nginx Status ({{ results.jk_nginx.count }} found)</div>
+      <div class="result-body">
+        {% if results.jk_nginx.found %}
+          {% for item in results.jk_nginx.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="muted">No status pages found.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── LARAVEL VULNS ── #}
+    {% if results.get('laravel_vulns') %}
+    <div class="result-card {% if results.laravel_vulns.count > 0 %}result-card-danger{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🔥</span> Laravel Vulns ({{ results.laravel_vulns.count }} found)</div>
+      <div class="result-body">{{ findings_list(results.laravel_vulns.found, 'No Laravel vulnerabilities found.') }}</div>
+    </div>
+    {% endif %}
+
+    {# ── DJANGO DEBUG ── #}
+    {% if results.get('django_debug') %}
+    <div class="result-card {% if results.django_debug.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🐍</span> Django Debug Mode ({{ results.django_debug.count }} found)</div>
+      <div class="result-body">{{ findings_list(results.django_debug.found, 'No Django debug issues found.') }}</div>
+    </div>
+    {% endif %}
+
+    {# ── SPRING BOOT ── #}
+    {% if results.get('spring_boot') %}
+    <div class="result-card {% if results.spring_boot.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🌱</span> Spring Boot Actuator ({{ results.spring_boot.count }} found)</div>
+      <div class="result-body">
+        {% if results.spring_boot.found %}
+          {% for item in results.spring_boot.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="muted">No actuator endpoints found.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── RUBY CONFIG ── #}
+    {% if results.get('ruby_config') %}
+    <div class="result-card {% if results.ruby_config.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">💎</span> Ruby / Rails Config ({{ results.ruby_config.count }} found)</div>
+      <div class="result-body">
+        {% if results.ruby_config.found %}
+          {% for item in results.ruby_config.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="muted">No Ruby/Rails config files exposed.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── JENKINS ── #}
+    {% if results.get('jenkins') %}
+    <div class="result-card {% if results.jenkins.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🔧</span> Jenkins Exposure ({{ results.jenkins.count }} found)</div>
+      <div class="result-body">{{ findings_list(results.jenkins.found, 'No Jenkins exposure found.') }}</div>
+    </div>
+    {% endif %}
+
+    {# ── IIS TELERIK ── #}
+    {% if results.get('iis_telerik') %}
+    <div class="result-card {% if results.iis_telerik.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🪟</span> IIS / Telerik ({{ results.iis_telerik.count }} found)</div>
+      <div class="result-body">
+        {% if results.iis_telerik.found %}
+          {% for item in results.iis_telerik.found %}
+          <div class="kv-row"><span class="kv-key mono">{{ item.path }}</span><span class="kv-val mono small">{{ item.url }}</span></div>
+          {% endfor %}
+        {% else %}<p class="muted">No IIS/Telerik issues found.</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── WP VULNS ── #}
+    {% if results.get('wp_vulns') %}
+    <div class="result-card {% if results.wp_vulns.count > 0 %}result-card-warning{% endif %}">
+      <div class="result-card-header"><span class="result-icon">🌐</span> WordPress Vulns ({{ results.wp_vulns.count }} found)</div>
+      <div class="result-body">{{ findings_list(results.wp_vulns.found, 'No WordPress vulnerabilities found.') }}</div>
+    </div>
+    {% endif %}
+
+    {# ── WP SETUP ── #}
+    {% if results.get('wp_setup') %}
+    <div class="result-card {% if results.wp_setup.count > 0 %}result-card-danger{% endif %}">
+      <div class="result-card-header"><span class="result-icon">⚙</span> WP Setup / Install ({{ results.wp_setup.count }} found)</div>
+      <div class="result-body">{{ findings_list(results.wp_setup.found, 'No WP setup/install pages found.') }}</div>
+    </div>
+    {% endif %}
+
+    </div><!-- /results-grid -->
+  </div>
+</div>
+{% endblock %}

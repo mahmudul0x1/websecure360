@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+{% block title %}WebSecure360 — Web Security Assessment Platform{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="container">
+    <div class="hero-badge">⬡ Web Security Assessment Platform</div>
+    <h1 class="hero-title">Find vulnerabilities<br><span class="accent">before attackers do</span></h1>
+    <p class="hero-desc">
+      WebSecure360 is a comprehensive web security scanner built for security engineers,
+      pentesters, and developers. Run 39 scan modules against any target and get a
+      full security report — in minutes, not days.
+    </p>
+    <div class="hero-cta">
+      <a href="{{ url_for('register') }}" class="btn-primary btn-lg">Start for Free</a>
+      <a href="{{ url_for('pricing') }}" class="btn-ghost btn-lg">View Pricing</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><span class="stat-n">39</span><span class="stat-l">Scan Modules</span></div>
+      <div class="hero-stat"><span class="stat-n">3</span><span class="stat-l">Plan Tiers</span></div>
+      <div class="hero-stat"><span class="stat-n">PDF</span><span class="stat-l">Reports</span></div>
+      <div class="hero-stat"><span class="stat-n">REST</span><span class="stat-l">API Access</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section">
+  <div class="container">
+    <div class="section-header center">
+      <h2>How it works</h2>
+      <p>Three steps to a full security report</p>
+    </div>
+    <div class="steps-row">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-icon">🎯</div>
+        <div class="step-title">Enter a target</div>
+        <div class="step-desc">Paste any URL — your web app, API endpoint, or domain. WebSecure360 normalises and validates it automatically.</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-icon">⚙</div>
+        <div class="step-title">Choose modules</div>
+        <div class="step-desc">Select from 39 scan modules across recon, secrets, frameworks, CMS, and vulnerability checks. Free and Pro tiers.</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-icon">📊</div>
+        <div class="step-title">Get your report</div>
+        <div class="step-desc">View a structured security report with risk score, findings, and recommendations. Download as PDF or access via API.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT WE SCAN -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header center">
+      <h2>What we scan</h2>
+      <p>39 modules covering the full attack surface — from recon to framework-specific vulnerabilities</p>
+    </div>
+
+    <!-- FREE MODULES -->
+    <div class="scan-category">
+      <div class="scan-cat-label free-label">✓ Free — Always Available</div>
+      <div class="scan-modules-row">
+        <div class="scan-mod">🔍 <strong>WHOIS Lookup</strong> — Registrar, creation/expiry dates, name servers</div>
+        <div class="scan-mod">🔒 <strong>SSL/TLS Analysis</strong> — Certificate validity, expiry, issuer, days remaining</div>
+        <div class="scan-mod">🛡 <strong>Security Headers</strong> — CSP, HSTS, X-Frame-Options, Referrer-Policy and more</div>
+        <div class="scan-mod">🌐 <strong>DNS Intelligence</strong> — IPv4, IPv6, hostname resolution</div>
+      </div>
+    </div>
+
+    <!-- PRO MODULES — DISCOVERY -->
+    <div class="scan-category">
+      <div class="scan-cat-label pro-label">⬡ Pro — Discovery & Recon</div>
+      <div class="scan-modules-row">
+        <div class="scan-mod">📡 <strong>Subdomain Enumeration</strong> — 30+ common subdomains with live IP</div>
+        <div class="scan-mod">🚪 <strong>Port Scanner</strong> — MySQL, Redis, MongoDB, RDP, SSH, FTP and more</div>
+        <div class="scan-mod">🔎 <strong>URL Fuzzer</strong> — .env, .git, admin, phpinfo, config files</div>
+        <div class="scan-mod">🔐 <strong>Admin Panel Finder</strong> — 60+ admin & login path patterns</div>
+        <div class="scan-mod">📁 <strong>Directory Listing</strong> — Open directories, storage, uploads, logs</div>
+        <div class="scan-mod">🧩 <strong>Tech Detection</strong> — CMS, framework, server, CDN/WAF fingerprinting</div>
+      </div>
+    </div>
+
+    <!-- PRO MODULES — SECRETS -->
+    <div class="scan-category">
+      <div class="scan-cat-label pro-label">⬡ Pro — Secrets & Credentials</div>
+      <div class="scan-modules-row">
+        <div class="scan-mod">🌿 <strong>.ENV File Exposure</strong> — Laravel .env, DB credentials, API keys</div>
+        <div class="scan-mod">📦 <strong>Git / SVN Exposure</strong> — .git/config, HEAD, credentials, Dockerfile</div>
+        <div class="scan-mod">🔑 <strong>JSON Secrets</strong> — credentials.json, appsettings, service accounts</div>
+        <div class="scan-mod">📜 <strong>JS File Secrets</strong> — Firebase keys, API tokens in config.js</div>
+        <div class="scan-mod">🗝 <strong>SSH / Private Keys</strong> — id_rsa, id_dsa, .pem, PuTTY keys</div>
+        <div class="scan-mod">📡 <strong>FTP Config Leak</strong> — .ftpconfig, sftp.json, FileZilla configs</div>
+        <div class="scan-mod">🔏 <strong>Sensitive Config</strong> — AWS credentials, Redis conf, Prometheus</div>
+        <div class="scan-mod">📄 <strong>YAML Config Leak</strong> — docker-compose, CI/CD secrets, parameters</div>
+        <div class="scan-mod">🗂 <strong>XML Config Leak</strong> — .idea configs, Magento local.xml, FileZilla</div>
+      </div>
+    </div>
+
+    <!-- PRO MODULES — VULNS -->
+    <div class="scan-category">
+      <div class="scan-cat-label pro-label">⬡ Pro — Vulnerabilities</div>
+      <div class="scan-modules-row">
+        <div class="scan-mod">⚡ <strong>XSS Detection</strong> — Reflected XSS across common GET parameters</div>
+        <div class="scan-mod">💉 <strong>SQL Injection</strong> — Error-based SQLi detection on input parameters</div>
+        <div class="scan-mod">◈  <strong>GraphQL Introspection</strong> — Exposed schemas, GET and POST probing</div>
+        <div class="scan-mod">📋 <strong>Swagger / OpenAPI</strong> — Exposed API specs, swagger-ui, redoc</div>
+        <div class="scan-mod">🗄 <strong>SQL Backup Exposure</strong> — dump.sql, database.sql, sqlite files</div>
+        <div class="scan-mod">💾 <strong>Backup File Exposure</strong> — site.zip, backup.tar.gz, .bak files</div>
+        <div class="scan-mod">📋 <strong>Log File Exposure</strong> — laravel.log, npm-debug.log, error logs</div>
+        <div class="scan-mod">🐘 <strong>PHP Config Backup</strong> — wp-config.php.bak, config.inc.php.old</div>
+        <div class="scan-mod">ℹ  <strong>PHP Info / Adminer</strong> — phpinfo.php, adminer, phpmyadmin</div>
+        <div class="scan-mod">🗃 <strong>File Manager Exposed</strong> — elfinder, Laravel filemanager, TinyMCE</div>
+      </div>
+    </div>
+
+    <!-- PRO MODULES — FRAMEWORKS -->
+    <div class="scan-category">
+      <div class="scan-cat-label pro-label">⬡ Pro — Frameworks & Servers</div>
+      <div class="scan-modules-row">
+        <div class="scan-mod">🔥 <strong>Laravel Vulns</strong> — Debugbar, Telescope, Ignition, PHPUnit eval-stdin</div>
+        <div class="scan-mod">🐍 <strong>Django Debug Mode</strong> — DEBUG=True page, admin panel, settings.py</div>
+        <div class="scan-mod">🌱 <strong>Spring Boot Actuator</strong> — /actuator/env, /heapdump, Jolokia</div>
+        <div class="scan-mod">💎 <strong>Ruby / Rails Config</strong> — schema.rb, secret_token.rb, credentials.db</div>
+        <div class="scan-mod">☕ <strong>Apache Tomcat</strong> — Manager UI, host-manager, path traversal</div>
+        <div class="scan-mod">⚙  <strong>JK / Nginx Status</strong> — jkstatus, server-status, nginx_status</div>
+        <div class="scan-mod">🔧 <strong>Jenkins Exposure</strong> — Script Console, API, open registration</div>
+        <div class="scan-mod">🪟 <strong>IIS / Telerik</strong> — Telerik WebResource, DialogHandler, RAU upload</div>
+        <div class="scan-mod">🌐 <strong>WordPress Vulns</strong> — Open registration, user enumeration via REST</div>
+        <div class="scan-mod">⚙  <strong>WP Setup / Install</strong> — Exposed wp-admin/install.php, setup-config</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section">
+  <div class="container">
+    <div class="section-header center">
+      <h2>Built for security professionals</h2>
+      <p>Everything you need to assess, document, and report</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Risk Scoring</div>
+        <div class="feature-desc">Every scan produces a 0–100 risk score calculated from findings severity, missing headers, open ports, and exposed secrets.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📄</div>
+        <div class="feature-title">PDF Reports</div>
+        <div class="feature-desc">Download a clean, professional PDF report for every scan. Include it in your pentest deliverables or client reports.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔌</div>
+        <div class="feature-title">REST API</div>
+        <div class="feature-desc">Pro and Enterprise users get full API access. Pull scan results, list projects, and integrate WebSecure360 into your own pipelines.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📁</div>
+        <div class="feature-title">Project Management</div>
+        <div class="feature-desc">Organise scans into projects per client or target. Full scan history, results comparison, and delete controls.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Live Progress</div>
+        <div class="feature-desc">Watch your scan run in real-time with a live progress bar and per-module status updates. No waiting blindly.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">Secure by Default</div>
+        <div class="feature-desc">All scans run server-side. Your credentials and results are never exposed. SSL verification uses certifi on all platforms.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header center">
+      <h2>Simple, transparent pricing</h2>
+      <p>Start free. Scale as you grow. Cancel anytime. All prices in USD.</p>
+    </div>
+    <div class="plans-row-3">
+
+      <!-- FREE -->
+      <div class="plan-card">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">$0<span>/month</span></div>
+        <p class="plan-desc">For individuals trying out WebSecure360.</p>
+        <ul class="plan-features">
+          <li>✓ 5 scans / month</li>
+          <li>✓ 2 projects</li>
+          <li>✓ 4 scan modules</li>
+          <li>✓ Scan history</li>
+          <li class="dim">✗ PDF reports</li>
+          <li class="dim">✗ Advanced modules</li>
+          <li class="dim">✗ API access</li>
+          <li class="dim">✗ Priority support</li>
+        </ul>
+        <a href="{{ url_for('register') }}" class="btn-ghost btn-full">Get Started Free</a>
+      </div>
+
+      <!-- PRO -->
+      <div class="plan-card plan-featured">
+        <div class="plan-badge-top">Most Popular</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">$15<span>/month</span></div>
+        <p class="plan-desc">For security professionals and freelancers.</p>
+        <ul class="plan-features">
+          <li>✓ 100 scans / month</li>
+          <li>✓ 20 projects</li>
+          <li>✓ All 39 scan modules</li>
+          <li>✓ PDF report download</li>
+          <li>✓ REST API access</li>
+          <li>✓ Subdomain, port, XSS, SQLi</li>
+          <li>✓ Framework & secret checks</li>
+          <li class="dim">✗ Priority support</li>
+        </ul>
+        <a href="{{ url_for('register') }}" class="btn-primary btn-full">Start Pro — $15/mo</a>
+      </div>
+
+      <!-- ENTERPRISE -->
+      <div class="plan-card plan-enterprise">
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-price">$49<span>/month</span></div>
+        <p class="plan-desc">For teams and security consultancies.</p>
+        <ul class="plan-features">
+          <li>✓ 1,000 scans / month</li>
+          <li>✓ 100 projects</li>
+          <li>✓ All 39 scan modules</li>
+          <li>✓ PDF reports</li>
+          <li>✓ REST API access</li>
+          <li>✓ Priority email support</li>
+          <li>✓ Early access to new features</li>
+          <li>✓ Unlimited team usage</li>
+        </ul>
+        <a href="{{ url_for('register') }}" class="btn-primary btn-full">Start Enterprise — $49/mo</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section cta-section">
+  <div class="container center">
+    <h2 class="cta-title">Ready to find your vulnerabilities?</h2>
+    <p class="cta-desc">Join security engineers using WebSecure360 to assess targets faster and report findings clearly.</p>
+    <div class="hero-cta">
+      <a href="{{ url_for('register') }}" class="btn-primary btn-lg">Create Free Account</a>
+      <a href="{{ url_for('login') }}" class="btn-ghost btn-lg">Sign In</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

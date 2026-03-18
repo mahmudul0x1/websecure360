@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}Admin Panel{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="container">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">⚙ Admin Panel</h1>
+        <p class="page-sub">Manage users, plans, and platform stats</p>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row" style="margin-bottom:32px">
+      <div class="stat-card">
+        <div class="stat-label">Total Users</div>
+        <div class="stat-value">{{ users|length }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Scans</div>
+        <div class="stat-value">{{ total_scans }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Projects</div>
+        <div class="stat-value">{{ total_projects }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pro / Enterprise</div>
+        <div class="stat-value accent">
+          {{ users | selectattr('plan', 'ne', 'free') | list | length }}
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS TABLE -->
+    <div class="section-block">
+      <div class="block-header">
+        <h2 class="block-title">All Users</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Plan</th>
+              <th>Scans Used</th>
+              <th>Projects</th>
+              <th>Joined</th>
+              <th>Change Plan</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr>
+              <td class="muted">{{ user.id }}</td>
+              <td>
+                {{ user.name }}
+                {% if user.email == 'admin@websecure360.local' %}
+                  <span class="plan-badge pro" style="margin-left:4px">ADMIN</span>
+                {% endif %}
+              </td>
+              <td class="mono muted small">{{ user.email }}</td>
+              <td>
+                <span class="status-badge status-{{ 'done' if user.plan == 'enterprise' else 'running' if user.plan == 'pro' else 'pending' }}">
+                  {{ user.plan.upper() }}
+                </span>
+              </td>
+              <td class="muted">{{ user.scans_used }} / {{ plans[user.plan].scans }}</td>
+              <td class="muted">{{ user.projects|length }}</td>
+              <td class="muted small">{{ user.created_at.strftime('%b %d, %Y') }}</td>
+              <td>
+                {% if user.email != 'admin@websecure360.local' %}
+                <form method="POST" action="{{ url_for('admin_change_plan', user_id=user.id) }}" style="display:flex;gap:6px;align-items:center">
+                  <select name="plan" class="input" style="width:auto;padding:4px 8px;font-size:12px">
+                    {% for plan_id, plan_cfg in plans.items() %}
+                    <option value="{{ plan_id }}" {% if user.plan == plan_id %}selected{% endif %}>
+                      {{ plan_cfg.name }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn-primary btn-sm">Set</button>
+                </form>
+                {% else %}
+                  <span class="muted small">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if user.email != 'admin@websecure360.local' %}
+                <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}"
+                      onsubmit="return confirm('Delete user {{ user.name }}? This removes all their data.')">
+                  <button class="link-danger">Delete</button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

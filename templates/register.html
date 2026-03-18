@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo"><span class="logo-icon">⬡</span> WebSecure<span class="logo-accent">360</span></div>
+    <h1 class="auth-title">Create your account</h1>
+    <p class="auth-sub">Free forever. No credit card required.</p>
+    <form method="POST" class="auth-form">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" name="name" class="input" placeholder="Md Mahmudul Hasan" required autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" name="email" class="input" placeholder="you@example.com" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="input" placeholder="Min 8 characters" required minlength="8">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <input type="password" name="confirm" class="input" placeholder="Repeat password" required>
+      </div>
+      <button type="submit" class="btn-primary btn-full">Create Account</button>
+    </form>
+    <p class="auth-switch">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+  </div>
+</div>
+{% endblock %}

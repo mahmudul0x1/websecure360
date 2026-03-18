@@ -1,0 +1,42 @@
+# ── Secrets & Config ──────────────────────────────────────
+.env
+*.env
+.env.local
+.env.production
+
+# ── Database ───────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+websecure360.db
+
+# ── Python ─────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual environments ───────────────────────────────────
+venv/
+env/
+.venv/
+ENV/
+
+# ── Output files ───────────────────────────────────────────
+reports/
+*.pdf
+
+# ── Mac ────────────────────────────────────────────────────
+.DS_Store
+__MACOSX/
+
+# ── IDE ────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo

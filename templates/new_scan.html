@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}New Scan{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="container container-sm">
+    <div class="breadcrumb"><a href="{{ url_for('projects') }}">Projects</a> / <a href="{{ url_for('project_detail', project_id=project.id) }}">{{ project.name }}</a> / New Scan</div>
+    <h1 class="page-title">New Scan</h1>
+
+    <div class="card">
+      <form method="POST">
+        <!-- TARGET -->
+        <div class="form-group">
+          <label class="form-label">Target URL</label>
+          <input type="text" name="target" placeholder="https://example.com" class="input" required>
+          <p class="form-hint">Enter the full URL including protocol. Only scan targets you own or have permission to test.</p>
+        </div>
+
+        <!-- MODULES -->
+        <div class="form-group">
+          <label class="form-label">Scan Modules</label>
+          <div class="modules-check-grid">
+            {% set module_info = {
+              'whois':          ('🔍', 'WHOIS Lookup',          'free'),
+              'ssl':            ('🔒', 'SSL/TLS Check',         'free'),
+              'headers':        ('🛡', 'Security Headers',      'free'),
+              'dns':            ('🌐', 'DNS Info',               'free'),
+              'subdomains':     ('📡', 'Subdomain Enum',        'pro'),
+              'ports':          ('🚪', 'Port Scanner',          'pro'),
+              'fuzzer':         ('🔎', 'URL Fuzzer',            'pro'),
+              'xss':            ('⚡', 'XSS Detection',         'pro'),
+              'sqli':           ('💉', 'SQL Injection',         'pro'),
+              'tech':           ('🧩', 'Tech Detection',        'pro'),
+              'admin_finder':   ('🔐', 'Admin Panel Finder',    'pro'),
+              'swagger':        ('📋', 'Swagger / OpenAPI',     'pro'),
+              'sql_backup':     ('🗄', 'SQL Backup Exposure',  'pro'),
+              'yaml_config':    ('📄', 'YAML Config Leak',      'pro'),
+              'json_secrets':   ('🔑', 'JSON Secrets',          'pro'),
+              'tomcat':         ('☕', 'Apache Tomcat',         'pro'),
+              'wp_vulns':       ('🌐', 'WordPress Vulns',       'pro'),
+              'jk_nginx':       ('⚙', 'JK / Nginx Status',    'pro'),
+              'env_exposure':   ('🌿', '.ENV File Exposure',    'pro'),
+              'git_exposure':   ('📦', 'Git / SVN Exposure',   'pro'),
+              'sensitive_config': ('🔏', 'Sensitive Config',    'pro'),
+              'js_secrets':     ('📜', 'JS File Secrets',       'pro'),
+              'xml_config':     ('🗂', 'XML Config Leak',      'pro'),
+              'graphql':        ('◈',  'GraphQL Introspection', 'pro'),
+              'dir_listing':    ('📁', 'Directory Listing',     'pro'),
+              'log_exposure':   ('📋', 'Log File Exposure',     'pro'),
+              'ftp_config':     ('📡', 'FTP Config Leak',       'pro'),
+              'ssh_keys':       ('🗝', 'SSH / Private Keys',   'pro'),
+              'backup_files':   ('💾', 'Backup File Exposure',  'pro'),
+              'php_backup':     ('🐘', 'PHP Config Backup',    'pro'),
+              'php_info':       ('ℹ',  'PHP Info / Adminer',   'pro'),
+              'file_manager':   ('🗃', 'File Manager Exposed',  'pro'),
+              'laravel_vulns':  ('🔥', 'Laravel Vulns',         'pro'),
+              'django_debug':   ('🐍', 'Django Debug Mode',     'pro'),
+              'spring_boot':    ('🌱', 'Spring Boot Actuator',  'pro'),
+              'ruby_config':    ('💎', 'Ruby / Rails Config',  'pro'),
+              'jenkins':        ('🔧', 'Jenkins Exposure',      'pro'),
+              'iis_telerik':    ('🪟', 'IIS / Telerik',        'pro'),
+              'wp_setup':       ('⚙', 'WP Setup / Install',   'pro'),
+            } %}
+            {% for mod_id, (icon, label, req_plan) in module_info.items() %}
+              {% set available = mod_id in plan_modules %}
+              <label class="module-check {% if not available %}module-locked{% endif %}">
+                <input type="checkbox" name="modules" value="{{ mod_id }}"
+                       {% if available %}checked{% else %}disabled{% endif %}>
+                <span class="module-check-body">
+                  <span class="module-check-icon">{{ icon }}</span>
+                  <span class="module-check-label">{{ label }}</span>
+                  {% if not available %}
+                    <span class="plan-badge pro">PRO</span>
+                  {% endif %}
+                </span>
+              </label>
+            {% endfor %}
+          </div>
+          {% if current_user.plan == 'free' %}
+          <p class="form-hint">
+            <a href="{{ url_for('pricing') }}">Upgrade to Pro</a> to unlock all 10 modules.
+          </p>
+          {% endif %}
+        </div>
+
+        <!-- SCANS LEFT -->
+        <div class="form-info">
+          <span class="info-icon">ℹ</span>
+          You have <strong>{{ current_user.scans_left() }}</strong> scans remaining this month.
+        </div>
+
+        <div class="form-actions">
+          <a href="{{ url_for('project_detail', project_id=project.id) }}" class="btn-ghost">Cancel</a>
+          <button type="submit" class="btn-primary">Start Scan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

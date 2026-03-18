@@ -1,0 +1,60 @@
+<!-- project_detail.html -->
+{% extends 'base.html' %}
+{% block title %}{{ project.name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <div class="breadcrumb"><a href="{{ url_for('projects') }}">Projects</a> / {{ project.name }}</div>
+        <h1 class="page-title">{{ project.name }}</h1>
+        {% if project.description %}<p class="page-sub">{{ project.description }}</p>{% endif %}
+      </div>
+      <a href="{{ url_for('new_scan', project_id=project.id) }}" class="btn-primary">+ New Scan</a>
+    </div>
+
+    {% if project.scans %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>Target</th><th>Modules</th><th>Risk Score</th><th>Status</th><th>Date</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for scan in project.scans %}
+          <tr>
+            <td class="mono">{{ scan.target }}</td>
+            <td class="muted small">{{ scan.modules_list()|join(', ') }}</td>
+            <td>
+              <div class="risk-badge risk-{{ 'high' if scan.risk_score >= 60 else 'medium' if scan.risk_score >= 30 else 'low' }}">
+                {{ scan.risk_score }}
+              </div>
+            </td>
+            <td><span class="status-badge status-{{ scan.status }}">{{ scan.status }}</span></td>
+            <td class="muted">{{ scan.created_at.strftime('%b %d, %Y %H:%M') }}</td>
+            <td class="actions-cell">
+              {% if scan.status == 'done' %}
+                <a href="{{ url_for('scan_results', scan_id=scan.scan_id) }}" class="link-action">View</a>
+              {% elif scan.status == 'running' %}
+                <a href="{{ url_for('scan_running', scan_id=scan.scan_id) }}" class="link-action">Live</a>
+              {% endif %}
+              <form method="POST" action="{{ url_for('delete_scan', scan_id=scan.scan_id) }}"
+                    style="display:inline" onsubmit="return confirm('Delete this scan?')">
+                <button class="link-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">No scans in this project</div>
+      <p class="empty-desc">Run your first scan on a web target.</p>
+      <a href="{{ url_for('new_scan', project_id=project.id) }}" class="btn-primary">Start Scan</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

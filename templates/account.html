@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}Account{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="container container-sm">
+    <h1 class="page-title">Account Settings</h1>
+
+    <!-- PROFILE -->
+    <div class="card mb-24">
+      <div class="card-header"><h3 class="card-title">Profile</h3></div>
+      <form method="POST" class="card-form">
+        <input type="hidden" name="action" value="update_name">
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input type="text" name="name" class="input" value="{{ current_user.name }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="input" value="{{ current_user.email }}" disabled>
+          <p class="form-hint">Email cannot be changed.</p>
+        </div>
+        <button type="submit" class="btn-primary">Save Changes</button>
+      </form>
+    </div>
+
+    <!-- PASSWORD -->
+    <div class="card mb-24">
+      <div class="card-header"><h3 class="card-title">Change Password</h3></div>
+      <form method="POST" class="card-form">
+        <input type="hidden" name="action" value="change_password">
+        <div class="form-group">
+          <label class="form-label">Current Password</label>
+          <input type="password" name="current_password" class="input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <input type="password" name="new_password" class="input" required minlength="8">
+        </div>
+        <button type="submit" class="btn-primary">Update Password</button>
+      </form>
+    </div>
+
+    <!-- SUBSCRIPTION -->
+    <div class="card mb-24">
+      <div class="card-header"><h3 class="card-title">Subscription</h3></div>
+      <div class="card-form">
+        <div class="kv-row"><span class="kv-key">Current Plan</span><span class="kv-val plan-{{ current_user.plan }}">{{ current_user.plan.upper() }}</span></div>
+        <div class="kv-row"><span class="kv-key">Scans Used</span><span class="kv-val">{{ current_user.scans_used }} / {{ current_user.plan_config().scans }}</span></div>
+        <div class="kv-row"><span class="kv-key">Reset Date</span><span class="kv-val mono">{{ current_user.scan_reset_date.strftime('%b %d, %Y') }}</span></div>
+        {% if current_user.plan == 'free' %}
+          <a href="{{ url_for('pricing') }}" class="btn-primary" style="margin-top:16px;display:inline-block">Upgrade Plan</a>
+        {% else %}
+          <form method="POST" action="{{ url_for('cancel_subscription') }}" style="margin-top:16px"
+                onsubmit="return confirm('Cancel your subscription?')">
+            <button type="submit" class="btn-danger-ghost">Cancel Subscription</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- API KEY -->
+    <div class="card mb-24">
+      <div class="card-header">
+        <h3 class="card-title">API Access
+          <span class="plan-badge {% if current_user.has_api_access() %}pro{% else %}free{% endif %}" style="margin-left:8px">
+            {% if current_user.has_api_access() %}ENABLED{% else %}PRO / ENTERPRISE{% endif %}
+          </span>
+        </h3>
+      </div>
+      <div class="card-form">
+        {% if current_user.has_api_access() %}
+          {% if current_user.api_key %}
+            <div class="form-group">
+              <label class="form-label">Your API Key</label>
+              <div class="api-key-display">
+                <span id="apiKeyText">{{ current_user.api_key }}</span>
+                <button onclick="copyApiKey()" class="btn-ghost btn-sm api-key-copy" id="copyBtn">Copy</button>
+              </div>
+              <p class="form-hint">Keep this key secret. It grants full API access to your account.</p>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:8px">
+              <form method="POST" action="{{ url_for('generate_api_key') }}">
+                <button type="submit" class="btn-ghost btn-sm"
+                        onclick="return confirm('Regenerate API key? The old key will stop working.')">
+                  Regenerate Key
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('revoke_api_key') }}">
+                <button type="submit" class="btn-danger-ghost btn-sm"
+                        onclick="return confirm('Revoke API key?')">
+                  Revoke Key
+                </button>
+              </form>
+            </div>
+          {% else %}
+            <p class="muted" style="margin-bottom:16px">No API key generated yet.</p>
+            <form method="POST" action="{{ url_for('generate_api_key') }}">
+              <button type="submit" class="btn-primary">Generate API Key</button>
+            </form>
+          {% endif %}
+
+          <!-- API DOCS QUICK REFERENCE -->
+          {% if current_user.api_key %}
+          <div class="api-docs">
+            <div class="api-docs-title">// Quick Reference</div>
+            <div class="api-endpoint">
+              <span class="api-method">GET</span>
+              <span class="api-path">/api/v1/me</span>
+              <span class="api-desc">Account info & usage</span>
+            </div>
+            <div class="api-endpoint">
+              <span class="api-method">GET</span>
+              <span class="api-path">/api/v1/projects</span>
+              <span class="api-desc">List all projects</span>
+            </div>
+            <div class="api-endpoint">
+              <span class="api-method">GET</span>
+              <span class="api-path">/api/v1/projects/{id}/scans</span>
+              <span class="api-desc">List scans in a project</span>
+            </div>
+            <div class="api-endpoint">
+              <span class="api-method">GET</span>
+              <span class="api-path">/api/v1/scans/{scan_id}</span>
+              <span class="api-desc">Get full scan results</span>
+            </div>
+            <p class="form-hint" style="margin-top:10px">
+              Send your API key as: <span class="mono">Authorization: Bearer YOUR_KEY</span>
+            </p>
+          </div>
+          {% endif %}
+
+        {% else %}
+          <p class="muted" style="margin-bottom:16px">
+            API access is available on Pro and Enterprise plans.
+            It lets you integrate WebSecure360 scan results into your own tools and workflows.
+          </p>
+          <a href="{{ url_for('pricing') }}" class="btn-primary">Upgrade to unlock API</a>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyApiKey() {
+  const key = document.getElementById('apiKeyText').textContent;
+  navigator.clipboard.writeText(key).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+</script>
+{% endblock %}

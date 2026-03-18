@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Projects{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div class="container">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Projects</h1>
+        <p class="page-sub">{{ current_user.projects|length }} of {{ current_user.plan_config().projects }} projects used</p>
+      </div>
+    </div>
+
+    <!-- NEW PROJECT FORM -->
+    {% if current_user.can_add_project() %}
+    <div class="card mb-24">
+      <div class="card-header">
+        <h3 class="card-title">New Project</h3>
+      </div>
+      <form method="POST" action="{{ url_for('new_project') }}" class="inline-form">
+        <input type="text" name="name" placeholder="Project name" required class="input" maxlength="100">
+        <input type="text" name="description" placeholder="Description (optional)" class="input" maxlength="300">
+        <button type="submit" class="btn-primary">Create</button>
+      </form>
+    </div>
+    {% else %}
+    <div class="alert alert-warning mb-24">
+      You've reached the project limit for your plan.
+      <a href="{{ url_for('pricing') }}" class="alert-link">Upgrade to Pro</a> for up to 20 projects.
+    </div>
+    {% endif %}
+
+    <!-- PROJECTS LIST -->
+    {% if current_user.projects %}
+    <div class="projects-grid">
+      {% for project in current_user.projects %}
+      <div class="project-card">
+        <div class="project-card-header">
+          <div>
+            <a href="{{ url_for('project_detail', project_id=project.id) }}" class="project-name">{{ project.name }}</a>
+            {% if project.description %}
+              <p class="project-desc">{{ project.description }}</p>
+            {% endif %}
+          </div>
+          <form method="POST" action="{{ url_for('delete_project', project_id=project.id) }}"
+                onsubmit="return confirm('Delete project and all its scans?')">
+            <button type="submit" class="btn-danger-ghost" title="Delete">×</button>
+          </form>
+        </div>
+        <div class="project-meta">
+          <span class="meta-item">{{ project.scans|length }} scans</span>
+          <span class="meta-sep">·</span>
+          <span class="meta-item muted">Created {{ project.created_at.strftime('%b %d, %Y') }}</span>
+        </div>
+        <div class="project-actions">
+          <a href="{{ url_for('project_detail', project_id=project.id) }}" class="btn-ghost btn-sm">View Scans</a>
+          <a href="{{ url_for('new_scan', project_id=project.id) }}" class="btn-primary btn-sm">+ New Scan</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📁</div>
+      <div class="empty-title">No projects yet</div>
+      <p class="empty-desc">Create your first project to start scanning web targets.</p>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
