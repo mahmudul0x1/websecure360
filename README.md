@@ -114,6 +114,13 @@ curl -H "Authorization: Bearer YOUR_API_KEY" http://localhost:5000/api/v1/scans/
 
 ---
 
+![Homepage](screenshots/homepage.png)
+![Dashboard](screenshots/dashboard.png)
+![Scan Results](screenshots/scan_results.png)
+![PDF Report](screenshots/report.png)
+
+---
+
 ## Legal
 
 For authorized security testing only. Do not scan targets you do not own or have explicit written permission to test.
