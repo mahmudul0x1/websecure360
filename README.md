@@ -18,14 +18,11 @@ A full-stack web security assessment platform with 39 scan modules, project mana
 
 ## Screenshots
 
-> Screenshots coming soon — run locally to see the full interface.
-
-<!-- After taking screenshots, replace the lines below with real images:
-![Homepage](screenshots/homepage.png)
 ![Dashboard](screenshots/dashboard.png)
+
 ![Scan Results](screenshots/scan_results.png)
-![PDF Report](screenshots/report.png)
--->
+
+![Homepage](screenshots/homepage.png)
 
 ---
 
